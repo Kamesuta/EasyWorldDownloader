@@ -98,7 +98,7 @@ public final class EasyWorldDownloader extends JavaPlugin {
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 
-                if (response.statusCode() == 200) {
+                if (response.statusCode() == 201) {
                     String downloadUrl = "https://filebin.net/" + binId + "/" + archiveName;
                     // アップロード成功ログ
                     String successLog = String.format("[%s] %s のアップロードが完了しました: %s",
