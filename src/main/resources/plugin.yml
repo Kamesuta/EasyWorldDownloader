@@ -1,0 +1,5 @@
+name: EasyWorldDownloader
+version: '1.0-SNAPSHOT'
+main: com.kamesuta.worlddl.EasyWorldDownloader
+api-version: '1.21'
+authors: [ Kamesuta ]
