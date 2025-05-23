@@ -3,3 +3,12 @@ version: '1.0-SNAPSHOT'
 main: com.kamesuta.worlddl.EasyWorldDownloader
 api-version: '1.21'
 authors: [ Kamesuta ]
+commands:
+  download:
+    description: 現在のワールドをダウンロード用に圧縮してアップロードします
+    usage: /download
+    permission: easyworlddownloader.download
+permissions:
+  easyworlddownloader.download:
+    description: ワールドをダウンロードする権限
+    default: true

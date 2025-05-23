@@ -1,0 +1,5 @@
+# filebin.netのBinID
+bin-id: "mc-world"
+
+# アーカイブファイル名のプレフィックス
+archive-prefix: "world-"
