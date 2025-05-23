@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +25,7 @@ import java.util.logging.Level;
 public final class EasyWorldDownloader extends JavaPlugin {
     private String binId;
     private String archivePrefix;
+    private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#,##0.00");
 
     @Override
     public void onEnable() {
@@ -41,6 +43,13 @@ public final class EasyWorldDownloader extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+    }
+
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String pre = "KMGTPE".charAt(exp-1) + "";
+        return SIZE_FORMAT.format(bytes / Math.pow(1024, exp)) + " " + pre + "B";
     }
 
     @Override
@@ -72,6 +81,13 @@ public final class EasyWorldDownloader extends JavaPlugin {
                 
                 // filebin.netにアップロード
                 String uploadUrl = "https://filebin.net/" + binId + "/" + archiveName;
+                String fileSize = formatFileSize(tempFile.length());
+                
+                // アップロード開始ログ
+                String startLog = String.format("[%s] %s %s (%s) のアップロードを開始しました",
+                    sender.getName(), archiveName, fileSize, uploadUrl);
+                getLogger().info(startLog);
+                sender.sendMessage("§aアップロードを開始します...");
                 
                 HttpClient client = HttpClient.newHttpClient();
                 HttpRequest request = HttpRequest.newBuilder()
@@ -84,9 +100,17 @@ public final class EasyWorldDownloader extends JavaPlugin {
                 
                 if (response.statusCode() == 200) {
                     String downloadUrl = "https://filebin.net/" + binId + "/" + archiveName;
+                    // アップロード成功ログ
+                    String successLog = String.format("[%s] %s のアップロードが完了しました: %s",
+                        sender.getName(), archiveName, downloadUrl);
+                    getLogger().info(successLog);
                     Bukkit.getScheduler().runTask(this, () -> 
                         sender.sendMessage("§aダウンロードURL: " + downloadUrl));
                 } else {
+                    // アップロード失敗ログ
+                    String failLog = String.format("[%s] %s のアップロードに失敗しました: %s",
+                        sender.getName(), archiveName, response.body());
+                    getLogger().warning(failLog);
                     Bukkit.getScheduler().runTask(this, () -> 
                         sender.sendMessage("§cアップロードに失敗しました: " + response.body()));
                 }
@@ -95,7 +119,10 @@ public final class EasyWorldDownloader extends JavaPlugin {
                 tempFile.delete();
                 
             } catch (Exception e) {
-                getLogger().log(Level.SEVERE, "ワールドの圧縮中にエラーが発生しました", e);
+                // エラーログ
+                String errorLog = String.format("[%s] ワールドの圧縮中にエラーが発生しました: %s",
+                    sender.getName(), e.getMessage());
+                getLogger().log(Level.SEVERE, errorLog, e);
                 Bukkit.getScheduler().runTask(this, () -> 
                     sender.sendMessage("§cエラーが発生しました: " + e.getMessage()));
             }
