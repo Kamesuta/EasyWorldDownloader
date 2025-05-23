@@ -66,7 +66,7 @@ public final class EasyWorldDownloader extends JavaPlugin {
                     for (World world : Bukkit.getWorlds()) {
                         File worldFolder = world.getWorldFolder();
                         sender.sendMessage("§a" + world.getName() + "を圧縮中...");
-                        addToTar(tarOut, worldFolder, worldFolder.getName());
+                        addToTar(tarOut, worldFolder, worldFolder.getName(), sender);
                     }
                 }
                 
@@ -104,25 +104,43 @@ public final class EasyWorldDownloader extends JavaPlugin {
         return true;
     }
 
-    private void addToTar(TarArchiveOutputStream tarOut, File file, String entryName) throws IOException {
+    private void addToTar(TarArchiveOutputStream tarOut, File file, String entryName, CommandSender sender) throws IOException {
+        // session.lockファイルを除外
+        if (file.getName().equals("session.lock")) {
+            return;
+        }
+
         if (file.isDirectory()) {
             File[] children = file.listFiles();
             if (children != null) {
                 for (File child : children) {
-                    addToTar(tarOut, child, entryName + "/" + child.getName());
+                    try {
+                        addToTar(tarOut, child, entryName + "/" + child.getName(), sender);
+                    } catch (IOException e) {
+                        // ファイルの読み取りに失敗した場合
+                        Bukkit.getScheduler().runTask(this, () -> 
+                            sender.sendMessage("§e警告: " + entryName + "/" + child.getName() + " の読み取りに失敗しました: " + e.getMessage()));
+                    }
                 }
             }
         } else {
-            TarArchiveEntry entry = new TarArchiveEntry(file, entryName);
-            tarOut.putArchiveEntry(entry);
-            try (FileInputStream fis = new FileInputStream(file)) {
-                byte[] buffer = new byte[8192];
-                int len;
-                while ((len = fis.read(buffer)) != -1) {
-                    tarOut.write(buffer, 0, len);
+            try {
+                TarArchiveEntry entry = new TarArchiveEntry(file, entryName);
+                tarOut.putArchiveEntry(entry);
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    byte[] buffer = new byte[8192];
+                    int len;
+                    while ((len = fis.read(buffer)) != -1) {
+                        tarOut.write(buffer, 0, len);
+                    }
                 }
+                tarOut.closeArchiveEntry();
+            } catch (IOException e) {
+                // ファイルの読み取りに失敗した場合
+                Bukkit.getScheduler().runTask(this, () -> 
+                    sender.sendMessage("§e警告: " + entryName + " の読み取りに失敗しました: " + e.getMessage()));
+                throw e; // エラーを上位に伝播させる
             }
-            tarOut.closeArchiveEntry();
         }
     }
 }
