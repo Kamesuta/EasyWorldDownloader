@@ -5,6 +5,10 @@ import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -22,9 +26,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
-public final class EasyWorldDownloader extends JavaPlugin {
+public final class EasyWorldDownloader extends JavaPlugin implements Listener {
     private String binId;
     private String archivePrefix;
+    private String loginMessage;
     private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#,##0.00");
 
     @Override
@@ -36,6 +41,10 @@ public final class EasyWorldDownloader extends JavaPlugin {
         FileConfiguration config = getConfig();
         binId = config.getString("bin-id", "mc-world");
         archivePrefix = config.getString("archive-prefix", "world-");
+        loginMessage = config.getString("login-message");
+        
+        // イベントリスナーの登録
+        getServer().getPluginManager().registerEvents(this, this);
         
         getCommand("download").setExecutor(this);
     }
@@ -43,6 +52,17 @@ public final class EasyWorldDownloader extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        if (loginMessage == null || loginMessage.isEmpty()) {
+            return;
+        }
+        Player player = event.getPlayer();
+        if (player.hasPermission("easyworlddownloader.download")) {
+            player.sendMessage(loginMessage);
+        }
     }
 
     private String formatFileSize(long bytes) {
